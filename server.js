@@ -2,9 +2,17 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
 const fs = require("fs");
+const cors = require("cors"); // ✅ CORS 추가
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ✅ CORS 설정: 특정 출처(origin) 허용
+app.use(cors({
+  origin: "https://ip-logger-1-vthi.onrender.com", // 담인님의 HTML이 있는 주소
+  methods: ["GET", "POST"],
+  credentials: false
+}));
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
