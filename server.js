@@ -21,7 +21,6 @@ app.get("/log-ip", (req, res) => {
 // 관리자 페이지
 app.get("/", (req, res) => {
   if (req.query.admin === ADMIN_KEY) {
-    // ip-log.txt 읽어서 관리자 페이지에 표시
     let logs = "";
     if (fs.existsSync(logPath)) {
       logs = fs.readFileSync(logPath, "utf8");
@@ -32,7 +31,6 @@ app.get("/", (req, res) => {
       <a href="/ips.csv?key=${ADMIN_KEY}">📥 CSV 다운로드</a>
     `);
   } else {
-    // 일반 방문자 페이지
     res.sendFile(path.join(__dirname, "public", "index.html"));
   }
 });
@@ -43,6 +41,20 @@ app.get("/ips.csv", (req, res) => {
     if (fs.existsSync(logPath)) {
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=ip-log.csv");
+      res.send(fs.readFileSync(logPath, "utf8"));
+    } else {
+      res.send("No logs yet.");
+    }
+  } else {
+    res.status(403).send("인증 실패");
+  }
+});
+
+// 새로 추가된 /ips 라우트 (텍스트로 로그 확인)
+app.get("/ips", (req, res) => {
+  if (req.query.key === ADMIN_KEY) {
+    if (fs.existsSync(logPath)) {
+      res.setHeader("Content-Type", "text/plain");
       res.send(fs.readFileSync(logPath, "utf8"));
     } else {
       res.send("No logs yet.");
