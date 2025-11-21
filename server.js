@@ -10,12 +10,13 @@ const ADMIN_KEY = process.env.ADMIN_KEY;
 const logPath = path.join(__dirname, "ip-log.txt");
 
 app.use(express.static("public"));
+app.use(express.json()); // ✅ POST 요청에서 JSON 파싱
 
-// 방문자 접속 시 IP 기록
-app.get("/log-ip", (req, res) => {
-  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+// 방문자 접속 시 IP 기록 (POST 방식)
+app.post("/log-ip", (req, res) => {
+  const ip = req.body.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   fs.appendFileSync(logPath, `${new Date().toISOString()} - ${ip}\n`);
-  res.send("IP logged!");
+  res.send("IP logged via POST!");
 });
 
 // 관리자 페이지
@@ -50,7 +51,7 @@ app.get("/ips.csv", (req, res) => {
   }
 });
 
-// 새로 추가된 /ips 라우트 (텍스트로 로그 확인)
+// /ips 라우트 (텍스트 로그 확인)
 app.get("/ips", (req, res) => {
   if (req.query.key === ADMIN_KEY) {
     if (fs.existsSync(logPath)) {
