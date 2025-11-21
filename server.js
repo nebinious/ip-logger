@@ -1,78 +1,41 @@
-<<<<<<< HEAD
 const express = require("express");
 const bodyParser = require("body-parser");
-const cors = require("cors");
-const fs = require("fs");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
-app.use(bodyParser.json());
-app.use(cors());
+const PORT = process.env.PORT || 3000;
 
-// 정적 파일 제공 (public 폴더 안의 HTML, CSS, JS 등)
+app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// ips.txt 없으면 생성
-if (!fs.existsSync("ips.txt")) {
-  fs.writeFileSync("ips.txt", "");
-}
+const logFile = path.join(__dirname, "ip-log.txt");
 
-// IP 기록 API
+// IP 기록 엔드포인트
 app.post("/log-ip", (req, res) => {
-  const ip = req.body.ip;
-  if (ip) {
-    fs.appendFileSync("ips.txt", ip + "\n");
-    res.send("IP logged: " + ip);
-  } else {
-    res.status(400).send("No IP provided");
-  }
+  const ip = req.body.ip || req.ip;
+  const time = new Date().toISOString();
+  const log = `${time} - ${ip}\n`;
+
+  fs.appendFile(logFile, log, (err) => {
+    if (err) {
+      console.error("로그 저장 실패:", err);
+      return res.status(500).send("서버 오류");
+    }
+    res.send("✅ IP가 기록되었습니다");
+  });
 });
 
-// IP 목록 보기
+// 기록된 IP 목록 보기
 app.get("/ips", (req, res) => {
-  const data = fs.readFileSync("ips.txt", "utf-8");
-  res.send("<pre>" + data + "</pre>");
+  fs.readFile(logFile, "utf8", (err, data) => {
+    if (err) {
+      return res.status(500).send("기록을 불러올 수 없습니다");
+    }
+    res.type("text/plain").send(data);
+  });
 });
 
-// Render 호환 포트 설정
-const PORT = process.env.PORT || 4000;
-=======
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-
-const app = express();
-app.use(bodyParser.json());
-app.use(cors());
-
-// 정적 파일 제공 (public 폴더 안의 HTML, CSS, JS 등)
-app.use(express.static(path.join(__dirname, "public")));
-
-// ips.txt 없으면 생성
-if (!fs.existsSync("ips.txt")) {
-  fs.writeFileSync("ips.txt", "");
-}
-
-// IP 기록 API
-app.post("/log-ip", (req, res) => {
-  const ip = req.body.ip;
-  if (ip) {
-    fs.appendFileSync("ips.txt", ip + "\n");
-    res.send("IP logged: " + ip);
-  } else {
-    res.status(400).send("No IP provided");
-  }
+app.listen(PORT, () => {
+  console.log(`🚀 서버 실행 중: http://localhost:${PORT}`);
 });
-
-// IP 목록 보기
-app.get("/ips", (req, res) => {
-  const data = fs.readFileSync("ips.txt", "utf-8");
-  res.send("<pre>" + data + "</pre>");
-});
-
-// Render 호환 포트 설정
-const PORT = process.env.PORT || 4000;
->>>>>>> f9f3d46 (feat: complete ip logger server with HTML)
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
