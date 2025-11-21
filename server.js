@@ -11,10 +11,13 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const logFile = path.join(__dirname, "ip-log.txt");
 
-// IP 기록 엔드포인트
+// ✅ IP 기록 엔드포인트
 app.post("/log-ip", (req, res) => {
   const ip = req.body.ip || req.ip;
-  const time = new Date().toISOString();
+  const time = new Date().toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    hour12: false
+  });
   const log = `${time} - ${ip}\n`;
 
   fs.appendFile(logFile, log, (err) => {
@@ -26,8 +29,13 @@ app.post("/log-ip", (req, res) => {
   });
 });
 
-// 기록된 IP 목록 보기
+// ✅ IP 목록 보기 (비밀번호 인증 필요)
 app.get("/ips", (req, res) => {
+  const secret = req.query.key;
+  if (secret !== "damin-secret") {
+    return res.status(403).send("🚫 접근 거부: 인증 실패");
+  }
+
   fs.readFile(logFile, "utf8", (err, data) => {
     if (err) {
       return res.status(500).send("기록을 불러올 수 없습니다");
