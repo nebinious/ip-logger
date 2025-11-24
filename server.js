@@ -25,12 +25,22 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// 방문자 IP 기록
+// 방문자 IP 기록 (위치까지 저장)
 app.post("/log-ip", async (req, res) => {
   const ip = req.body.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   try {
-    await pool.query("INSERT INTO ip_logs (ip_address) VALUES ($1)", [ip]);
-    res.send("IP logged to DB!");
+    // 위치 조회
+    const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,city,isp`;
+    const r = await fetch(url);
+    const geo = await r.json();
+
+    // DB 저장 (IP + 위치)
+    await pool.query(
+      "INSERT INTO ip_logs (ip_address, country, city, isp) VALUES ($1, $2, $3, $4)",
+      [ip, geo.country || null, geo.city || null, geo.isp || null]
+    );
+
+    res.send("IP + 위치 logged to DB!");
   } catch (err) {
     console.error(err);
     res.status(500).send("DB error");
@@ -65,7 +75,7 @@ app.get("/ips.csv", async (req, res) => {
   if (req.query.key === ADMIN_KEY) {
     try {
       const result = await pool.query("SELECT * FROM ip_logs ORDER BY timestamp DESC");
-      const csv = result.rows.map(r => `${r.timestamp},${r.ip_address}`).join("\n");
+      const csv = result.rows.map(r => `${r.timestamp},${r.ip_address},${r.country || ""},${r.city || ""},${r.isp || ""}`).join("\n");
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=ip-log.csv");
       res.send(csv);
