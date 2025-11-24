@@ -99,6 +99,14 @@
       font-size: 14px;
       color: #9fc9f7;
     }
+    .steam-footer {
+      margin-top: 40px;
+      text-align: center;
+    }
+    .steam-footer img {
+      width: 100px;
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
@@ -139,12 +147,14 @@
     </div>
   </div>
 
+  <!-- ✅ Steam 로고 하단 추가 -->
+  <div class="steam-footer">
+    <img src="steam-logo.png" alt="Steam Logo" />
+  </div>
+
   <div class="container" id="admin-log" style="display:none;">
     <div class="top-title">📋 방문자 IP 기록</div>
-
-    <!-- ✅ CSV 다운로드 링크 추가 -->
     <a href="/ips.csv?key=damin-secret" style="color:var(--accent); font-size:14px;">📥 CSV 다운로드</a>
-
     <div class="admin-log" id="log-output">불러오는 중...</div>
   </div>
 
