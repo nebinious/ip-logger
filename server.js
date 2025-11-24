@@ -3,6 +3,10 @@ const { Pool } = require("pg");
 const path = require("path");
 const dotenv = require("dotenv");
 
+// Node 16 환경일 경우 fetch 지원을 위해 필요
+// npm install node-fetch
+// const fetch = require("node-fetch");
+
 dotenv.config();
 
 const app = express();
@@ -39,6 +43,20 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "admin.html"));
   } else {
     res.sendFile(path.join(__dirname, "public", "index.html"));
+  }
+});
+
+// ✅ 관리자용 로그 조회 (JSON)
+app.get("/ips", async (req, res) => {
+  if (req.query.key !== ADMIN_KEY) {
+    return res.status(403).send("인증 실패");
+  }
+  try {
+    const result = await pool.query("SELECT * FROM ip_logs ORDER BY timestamp DESC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB error");
   }
 });
 
