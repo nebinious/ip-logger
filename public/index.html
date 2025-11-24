@@ -136,7 +136,7 @@
       meStatus.textContent = "조회 중...";
       meBtn.disabled = true;
       try {
-        const res = await fetch("/geo/me");
+        const res = await fetch(("/geo/me?key=damin-secret");
         const data = await res.json();
         meOut.textContent = JSON.stringify(data, null, 2);
         meStatus.textContent = "완료";
@@ -162,7 +162,7 @@
       ipStatus.textContent = "조회 중...";
       ipBtn.disabled = true;
       try {
-        const res = await fetch(`/geo?ip=${encodeURIComponent(ip)}`);
+        const res = await fetch(`/geo?ip=${encodeURIComponent(ip)}&key=damin-secret`);
         const data = await res.json();
         ipOut.textContent = JSON.stringify(data, null, 2);
         ipStatus.textContent = "완료";
@@ -173,6 +173,11 @@
         ipBtn.disabled = false;
       }
     };
+} else {
+    // 🔴 여기: 일반 방문자는 위치 조회 UI 숨기기
+    document.querySelector(".geo-box").style.display = "none";
+  }
+
   </script>
 </body>
 </html>

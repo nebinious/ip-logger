@@ -3,7 +3,7 @@ const { Pool } = require("pg");
 const path = require("path");
 const dotenv = require("dotenv");
 
-dotenv.config(); // .env 파일 읽기
+dotenv.config();
 
 const app = express();
 app.use(express.json());
@@ -11,7 +11,7 @@ app.use(express.static("public"));
 
 const ADMIN_KEY = process.env.ADMIN_KEY;
 
-// ✅ PostgreSQL 연결 풀
+// PostgreSQL 연결 풀
 const pool = new Pool({
   host: process.env.PGHOST,
   user: process.env.PGUSER,
@@ -21,7 +21,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// 방문자 접속 시 IP 기록
+// 방문자 IP 기록
 app.post("/log-ip", async (req, res) => {
   const ip = req.body.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   try {
@@ -69,15 +69,19 @@ app.get("/ips.csv", async (req, res) => {
   }
 });
 
-// ✅ 추가된 부분: IP 위치 추정
+// ✅ 위치 조회 (관리자 전용)
 // 특정 IP 조회
 app.get("/geo", async (req, res) => {
+  if (req.query.key !== ADMIN_KEY) {
+    return res.status(403).json({ error: "관리자 인증 필요" });
+  }
+
   const ip = req.query.ip;
   if (!ip) return res.status(400).json({ error: "ip 파라미터 필요" });
 
   try {
     const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,regionName,city,lat,lon,isp,org,timezone,query`;
-    const r = await fetch(url); // 내장 fetch 사용
+    const r = await fetch(url);
     const data = await r.json();
 
     if (data.status !== "success") {
@@ -103,12 +107,16 @@ app.get("/geo", async (req, res) => {
 
 // 접속자 본인 IP 조회
 app.get("/geo/me", async (req, res) => {
+  if (req.query.key !== ADMIN_KEY) {
+    return res.status(403).json({ error: "관리자 인증 필요" });
+  }
+
   const forwarded = req.headers["x-forwarded-for"];
   const ip = (forwarded?.split(",")[0]?.trim()) || req.socket.remoteAddress;
 
   try {
     const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,regionName,city,lat,lon,isp,org,timezone,query`;
-    const r = await fetch(url); // 내장 fetch 사용
+    const r = await fetch(url);
     const data = await r.json();
 
     if (data.status !== "success") {
