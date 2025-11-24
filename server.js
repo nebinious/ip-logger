@@ -2,7 +2,6 @@ const express = require("express");
 const { Pool } = require("pg");
 const path = require("path");
 const dotenv = require("dotenv");
-const fetch = require("node-fetch"); // 위치 조회용
 
 dotenv.config(); // .env 파일 읽기
 
@@ -70,7 +69,6 @@ app.get("/ips.csv", async (req, res) => {
   }
 });
 
-
 // ✅ 추가된 부분: IP 위치 추정
 // 특정 IP 조회
 app.get("/geo", async (req, res) => {
@@ -79,7 +77,7 @@ app.get("/geo", async (req, res) => {
 
   try {
     const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,regionName,city,lat,lon,isp,org,timezone,query`;
-    const r = await fetch(url);
+    const r = await fetch(url); // 내장 fetch 사용
     const data = await r.json();
 
     if (data.status !== "success") {
@@ -110,7 +108,7 @@ app.get("/geo/me", async (req, res) => {
 
   try {
     const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,regionName,city,lat,lon,isp,org,timezone,query`;
-    const r = await fetch(url);
+    const r = await fetch(url); // 내장 fetch 사용
     const data = await r.json();
 
     if (data.status !== "success") {
@@ -133,7 +131,6 @@ app.get("/geo/me", async (req, res) => {
     res.status(500).json({ error: "서버 오류", detail: String(err) });
   }
 });
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
