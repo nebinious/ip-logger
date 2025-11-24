@@ -1,106 +1,74 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-   <title>관리자 페이지</title>
-    <style>
-    :root {
-      --bg: #1b2838; --panel: #2a475e; --border: #3c5873;
-      --accent: #66c0f4; --text: #c7d5e0; --muted: #8fa6b7; --warn: #b44040;
-    }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: Inter, Segoe UI, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 40px 16px; }
-    .container { max-width: 820px; margin: 0 auto; }
-    .top-title { font-size: 26px; color: white; margin-bottom: 16px; }
-    .breadcrumb { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
-    .panel { background: var(--panel); border: 1px solid var(--border); padding: 28px; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.35); margin-top: 18px; }
-    .message-bar { background: #5c9bd6; padding: 14px; border-radius: 4px; color: white; margin-bottom: 20px; font-size: 15px; }
-    .fraud-box { background: #18222d; border-left: 5px solid var(--warn); padding: 18px; border-radius: 4px; margin: 20px 0; }
-    .fraud-header { background: var(--warn); color: white; font-weight: 700; padding: 8px 12px; margin-bottom: 12px; border-radius: 3px; }
-    .profile { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-    .profile img { width: 64px; height: 64px; border-radius: 4px; object-fit: cover; border: 1px solid #000; }
-    .profile .name { font-size: 16px; font-weight: 600; color: white; }
-    p { line-height: 1.6; margin: 10px 0; color: var(--text); }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .footer-box { margin-top: 30px; padding: 14px; background: #1f2f40; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; gap: 12px; }
-    .footer-box img { width: 40px; height: 40px; border-radius: 3px; }
-    .admin-log { white-space: pre-wrap; background: #111c2a; border: 1px solid var(--border); padding: 20px; border-radius: 6px; margin-top: 20px; font-size: 14px; color: #9fc9f7; }
-    .geo-box { margin-top: 24px; padding: 16px; background: #163043; border: 1px solid var(--border); border-radius: 6px; }
-    .row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-    input[type="text"] { flex: 1; padding: 8px 10px; border-radius: 4px; border: 1px solid #38566f; background: #0f2536; color: #d6e6f6; }
-    button { padding: 8px 12px; border: 0; border-radius: 4px; background: #2d78b7; color: white; cursor: pointer; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    pre { background: #0f1c29; border: 1px solid #2c4b64; padding: 12px; border-radius: 4px; color: #9fc9f7; }
+  <meta charset="UTF-8" />
+  <title>관리자 페이지</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    h1 { color: #333; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #eee; }
+    .error { color: red; margin-top: 20px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="top-title">📋 방문자 IP 기록</div>
-    <a href="/ips.csv?key=damin-secret" style="color:var(--accent); font-size:14px;">📥 CSV 다운로드</a>
-    <div class="admin-log" id="log-output">불러오는 중...</div>
-
-    <!-- 위치 조회 UI -->
-    <div class="geo-box">
-      <div class="row">
-        <button id="checkMe">내 IP 위치(추정) 조회</button>
-        <span id="meStatus" style="color:#8fa6b7;"></span>
-      </div>
-      <pre id="meOut">결과 없음</pre>
-
-      <div class="row" style="margin-top:12px;">
-        <input id="ipInput" type="text" placeholder="조회할 IP를 입력하세요 (예: 8.8.8.8)" />
-        <button id="checkIp">IP 위치 조회</button>
-        <span id="ipStatus" style="color:#8fa6b7;"></span>
-      </div>
-      <pre id="ipOut">결과 없음</pre>
-    </div>
-  </div>
+  <h1>📋 접속자 로그 + 위치</h1>
+  <table id="log-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>IP 주소</th>
+        <th>접속 시간</th>
+        <th>국가</th>
+        <th>도시</th>
+        <th>ISP</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div class="error" id="error-msg"></div>
 
   <script>
-    // 관리자 로그 불러오기
-    fetch("/ips?key=damin-secret")
-      .then(res => res.text())
-      .then(data => { document.getElementById("log-output").textContent = data || "기록 없음"; })
-      .catch(err => { document.getElementById("log-output").textContent = "불러오기 실패: " + err; });
-
-    // 위치 조회 이벤트
-    document.getElementById("checkMe").onclick = async () => {
-      const meStatus = document.getElementById("meStatus");
-      const meOut = document.getElementById("meOut");
-      meStatus.textContent = "조회 중...";
-      try {
-        const res = await fetch("/geo/me?key=damin-secret");
-        const data = await res.json();
-        meOut.textContent = JSON.stringify(data, null, 2);
-        meStatus.textContent = "완료";
-      } catch (e) {
-        meOut.textContent = "오류: " + e;
-        meStatus.textContent = "실패";
-      }
-    };
-
-    document.getElementById("checkIp").onclick = async () => {
-      const ip = document.getElementById("ipInput").value.trim();
-      const ipStatus = document.getElementById("ipStatus");
-      const ipOut = document.getElementById("ipOut");
-      if (!ip) {
-        ipStatus.textContent = "IP를 입력하세요";
-        return;
-      }
-      ipStatus.textContent = "조회 중...";
+    async function fetchGeo(ip) {
       try {
         const res = await fetch(`/geo?ip=${encodeURIComponent(ip)}&key=damin-secret`);
         const data = await res.json();
-        ipOut.textContent = JSON.stringify(data, null, 2);
-        ipStatus.textContent = "완료";
-      } catch (e) {
-        ipOut.textContent = "오류: " + e;
-        ipStatus.textContent = "실패";
+        return data.status === "fail" ? null : data;
+      } catch {
+        return null;
       }
-    };
+    }
+
+    async function loadLogs() {
+      try {
+        const res = await fetch("/ips?key=damin-secret");
+        if (!res.ok) throw new Error("서버 응답 실패");
+        const logs = await res.json();
+
+        const tbody = document.querySelector("#log-table tbody");
+        tbody.innerHTML = "";
+
+        for (const log of logs) {
+          const geo = await fetchGeo(log.ip_address);
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${log.id}</td>
+            <td>${log.ip_address}</td>
+            <td>${new Date(log.timestamp).toLocaleString()}</td>
+            <td>${geo?.country || "-"}</td>
+            <td>${geo?.city || "-"}</td>
+            <td>${geo?.isp || "-"}</td>
+          `;
+          tbody.appendChild(row);
+        }
+      } catch (err) {
+        document.getElementById("error-msg").textContent = "불러오기 실패: " + err.message;
+        console.error(err);
+      }
+    }
+
+    loadLogs();
   </script>
 </body>
 </html>
