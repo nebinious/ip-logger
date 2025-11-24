@@ -2,6 +2,7 @@ const express = require("express");
 const { Pool } = require("pg");
 const path = require("path");
 const dotenv = require("dotenv");
+const fetch = require("node-fetch"); // 위치 조회용
 
 dotenv.config(); // .env 파일 읽기
 
@@ -68,6 +69,71 @@ app.get("/ips.csv", async (req, res) => {
     res.status(403).send("인증 실패");
   }
 });
+
+
+// ✅ 추가된 부분: IP 위치 추정
+// 특정 IP 조회
+app.get("/geo", async (req, res) => {
+  const ip = req.query.ip;
+  if (!ip) return res.status(400).json({ error: "ip 파라미터 필요" });
+
+  try {
+    const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,regionName,city,lat,lon,isp,org,timezone,query`;
+    const r = await fetch(url);
+    const data = await r.json();
+
+    if (data.status !== "success") {
+      return res.status(400).json({ error: data.message || "조회 실패" });
+    }
+
+    res.json({
+      ip: data.query,
+      country: data.country,
+      region: data.regionName,
+      city: data.city,
+      timezone: data.timezone,
+      isp: data.isp,
+      org: data.org,
+      lat: data.lat,
+      lon: data.lon,
+      note: "IP 기반 위치는 도시/구 수준 추정치이며 오차가 큽니다."
+    });
+  } catch (err) {
+    res.status(500).json({ error: "서버 오류", detail: String(err) });
+  }
+});
+
+// 접속자 본인 IP 조회
+app.get("/geo/me", async (req, res) => {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = (forwarded?.split(",")[0]?.trim()) || req.socket.remoteAddress;
+
+  try {
+    const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,regionName,city,lat,lon,isp,org,timezone,query`;
+    const r = await fetch(url);
+    const data = await r.json();
+
+    if (data.status !== "success") {
+      return res.status(400).json({ error: data.message || "조회 실패" });
+    }
+
+    res.json({
+      ip: data.query,
+      country: data.country,
+      region: data.regionName,
+      city: data.city,
+      timezone: data.timezone,
+      isp: data.isp,
+      org: data.org,
+      lat: data.lat,
+      lon: data.lon,
+      note: "IP 기반 위치는 도시/구 수준 추정치이며 오차가 큽니다."
+    });
+  } catch (err) {
+    res.status(500).json({ error: "서버 오류", detail: String(err) });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
