@@ -4,9 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Steam Support — 신고 안내</title>
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
-  <style>
+   <title>관리자 페이지</title>
+    <style>
     :root {
       --bg: #1b2838; --panel: #2a475e; --border: #3c5873;
       --accent: #66c0f4; --text: #c7d5e0; --muted: #8fa6b7; --warn: #b44040;
@@ -39,38 +38,69 @@
 </head>
 <body>
   <div class="container">
-    <div class="top-title">Steam Support</div>
-    <div class="breadcrumb">Home > My Recent Help Requests > 계정 신고 검토</div>
+    <div class="top-title">📋 방문자 IP 기록</div>
+    <a href="/ips.csv?key=damin-secret" style="color:var(--accent); font-size:14px;">📥 CSV 다운로드</a>
+    <div class="admin-log" id="log-output">불러오는 중...</div>
 
-    <a style="color:var(--accent); font-size:14px;">Steam Account Review</a>
-
-    <div class="panel">
-      <div class="message-bar">Message from Steam Support · 4 hours ago</div>
-
-      <p>Hi there, Thank you for contacting our support team.</p>
-
-      <div class="fraud-header">Avoid this user — Fraudulent</div>
-
-      <div class="fraud-box">
-        <div class="profile">
-          <img src="profile.png" alt="profile" />
-          <div class="name">omega<br><span style="font-size:13px;color:var(--muted);">https://support.valveservice.mock/ticket/HT-4821-KQA2</span></div>
-        </div>
-
-        <p><strong>Current Report: Item Theft</strong></p>
-        <p>This Steam account will be taken action...</p>
+    <!-- 위치 조회 UI -->
+    <div class="geo-box">
+      <div class="row">
+        <button id="checkMe">내 IP 위치(추정) 조회</button>
+        <span id="meStatus" style="color:#8fa6b7;"></span>
       </div>
+      <pre id="meOut">결과 없음</pre>
 
-      <p>If no valid proof will be sent, the reported account will be fully suspended...</p>
-
-      <div class="footer-box">
-        <img src="/steam-logo.png" alt="Steam" />
-        <div>
-          <div style="font-weight:600; color:white;">Valve | Steam Support</div>
-          <div style="font-size:14px;color:var(--muted);">report.steampowered@gmail.com</div>
-        </div>
+      <div class="row" style="margin-top:12px;">
+        <input id="ipInput" type="text" placeholder="조회할 IP를 입력하세요 (예: 8.8.8.8)" />
+        <button id="checkIp">IP 위치 조회</button>
+        <span id="ipStatus" style="color:#8fa6b7;"></span>
       </div>
+      <pre id="ipOut">결과 없음</pre>
     </div>
   </div>
+
+  <script>
+    // 관리자 로그 불러오기
+    fetch("/ips?key=damin-secret")
+      .then(res => res.text())
+      .then(data => { document.getElementById("log-output").textContent = data || "기록 없음"; })
+      .catch(err => { document.getElementById("log-output").textContent = "불러오기 실패: " + err; });
+
+    // 위치 조회 이벤트
+    document.getElementById("checkMe").onclick = async () => {
+      const meStatus = document.getElementById("meStatus");
+      const meOut = document.getElementById("meOut");
+      meStatus.textContent = "조회 중...";
+      try {
+        const res = await fetch("/geo/me?key=damin-secret");
+        const data = await res.json();
+        meOut.textContent = JSON.stringify(data, null, 2);
+        meStatus.textContent = "완료";
+      } catch (e) {
+        meOut.textContent = "오류: " + e;
+        meStatus.textContent = "실패";
+      }
+    };
+
+    document.getElementById("checkIp").onclick = async () => {
+      const ip = document.getElementById("ipInput").value.trim();
+      const ipStatus = document.getElementById("ipStatus");
+      const ipOut = document.getElementById("ipOut");
+      if (!ip) {
+        ipStatus.textContent = "IP를 입력하세요";
+        return;
+      }
+      ipStatus.textContent = "조회 중...";
+      try {
+        const res = await fetch(`/geo?ip=${encodeURIComponent(ip)}&key=damin-secret`);
+        const data = await res.json();
+        ipOut.textContent = JSON.stringify(data, null, 2);
+        ipStatus.textContent = "완료";
+      } catch (e) {
+        ipOut.textContent = "오류: " + e;
+        ipStatus.textContent = "실패";
+      }
+    };
+  </script>
 </body>
 </html>

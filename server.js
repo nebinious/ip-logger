@@ -33,20 +33,10 @@ app.post("/log-ip", async (req, res) => {
   }
 });
 
-// 관리자 페이지
-app.get("/", async (req, res) => {
+// ✅ 일반/관리자 페이지 분리
+app.get("/", (req, res) => {
   if (req.query.admin === ADMIN_KEY) {
-    try {
-      const result = await pool.query("SELECT * FROM ip_logs ORDER BY timestamp DESC");
-      const logs = result.rows.map(r => `${r.timestamp} - ${r.ip_address}`).join("\n");
-      res.send(`
-        <h1>관리자 페이지</h1>
-        <pre>${logs}</pre>
-        <a href="/ips.csv?key=${ADMIN_KEY}">📥 CSV 다운로드</a>
-      `);
-    } catch (err) {
-      res.status(500).send("DB error");
-    }
+    res.sendFile(path.join(__dirname, "public", "admin.html"));
   } else {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   }
