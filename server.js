@@ -26,8 +26,19 @@ const pool = new Pool({
 
 // 방문자 IP 기록 (클라이언트 Geolocation + ip-api 조회 병합)
 app.post("/log-ip", async (req, res) => {
-  const ip = req.body.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-  const { geo_lat, geo_lon, accuracy } = req.body;
+  const ip =
+    req.body.ip ||
+    req.headers["x-forwarded-for"] ||
+    req.socket.remoteAddress ||
+    "unknown";
+
+  // 클라이언트에서 받은 값
+  let { geo_lat, geo_lon, accuracy } = req.body;
+
+  // 숫자 변환 (DB 타입 맞추기)
+  geo_lat = geo_lat ? Number(geo_lat) : null;
+  geo_lon = geo_lon ? Number(geo_lon) : null;
+  accuracy = accuracy ? parseInt(accuracy) : null;
 
   try {
     // ip-api.com으로 추가 정보 조회
@@ -35,7 +46,7 @@ app.post("/log-ip", async (req, res) => {
     const r = await fetch(url);
     const geo = await r.json();
 
-    // DB 저장 (IP + 클라이언트 위치 + ip-api 위치)
+    // DB 저장
     await pool.query(
       `INSERT INTO ip_logs (ip_address, country, city, isp, geo_lat, geo_lon, accuracy, timestamp)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
@@ -44,9 +55,9 @@ app.post("/log-ip", async (req, res) => {
         geo.country || null,
         geo.city || null,
         geo.isp || null,
-        geo_lat || null,
-        geo_lon || null,
-        accuracy || null
+        geo_lat,
+        geo_lon,
+        accuracy
       ]
     );
 
