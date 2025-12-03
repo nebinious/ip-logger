@@ -2,8 +2,7 @@ const express = require("express");
 const { Pool } = require("pg");
 const path = require("path");
 const dotenv = require("dotenv");
-
-// Node 16 환경일 경우 fetch 지원을 위해 필요
+// Node 16 환경일 경우 fetch 지원 필요
 // npm install node-fetch
 // const fetch = require("node-fetch");
 
@@ -25,19 +24,30 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// 방문자 IP 기록 (위치까지 저장)
+// 방문자 IP 기록 (클라이언트 Geolocation + ip-api 조회 병합)
 app.post("/log-ip", async (req, res) => {
   const ip = req.body.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  const { geo_lat, geo_lon, accuracy } = req.body;
+
   try {
-    // 위치 조회
+    // ip-api.com으로 추가 정보 조회
     const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,city,isp`;
     const r = await fetch(url);
     const geo = await r.json();
 
-    // DB 저장 (IP + 위치)
+    // DB 저장 (IP + 클라이언트 위치 + ip-api 위치)
     await pool.query(
-      "INSERT INTO ip_logs (ip_address, country, city, isp) VALUES ($1, $2, $3, $4)",
-      [ip, geo.country || null, geo.city || null, geo.isp || null]
+      `INSERT INTO ip_logs (ip_address, country, city, isp, geo_lat, geo_lon, accuracy, timestamp)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+      [
+        ip,
+        geo.country || null,
+        geo.city || null,
+        geo.isp || null,
+        geo_lat || null,
+        geo_lon || null,
+        accuracy || null
+      ]
     );
 
     res.send("IP + 위치 logged to DB!");
@@ -75,7 +85,12 @@ app.get("/ips.csv", async (req, res) => {
   if (req.query.key === ADMIN_KEY) {
     try {
       const result = await pool.query("SELECT * FROM ip_logs ORDER BY timestamp DESC");
-      const csv = result.rows.map(r => `${r.timestamp},${r.ip_address},${r.country || ""},${r.city || ""},${r.isp || ""}`).join("\n");
+      const csv = result.rows
+        .map(
+          r =>
+            `${r.timestamp},${r.ip_address},${r.country || ""},${r.city || ""},${r.isp || ""},${r.geo_lat || ""},${r.geo_lon || ""},${r.accuracy || ""}`
+        )
+        .join("\n");
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=ip-log.csv");
       res.send(csv);
