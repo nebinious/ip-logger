@@ -12,6 +12,9 @@ const app = express();
 app.use(express.json());
 app.use(express.static("public"));
 
+// ✅ 프록시 신뢰 설정 (X-Forwarded-For 반영)
+app.set("trust proxy", true);
+
 const ADMIN_KEY = process.env.ADMIN_KEY;
 
 // PostgreSQL 연결 풀
@@ -24,41 +27,24 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// 방문자 IP 기록 (클라이언트 Geolocation + ip-api 조회 병합)
+// 방문자 IP 기록
 app.post("/log-ip", async (req, res) => {
-  const ip =
-    req.body.ip ||
-    req.headers["x-forwarded-for"] ||
-    req.socket.remoteAddress ||
-    "unknown";
+  const ip = req.body.ip || req.ip || "unknown";
 
-  // 클라이언트에서 받은 값
   let { geo_lat, geo_lon, accuracy } = req.body;
-
-  // 숫자 변환 (DB 타입 맞추기)
   geo_lat = geo_lat ? Number(geo_lat) : null;
   geo_lon = geo_lon ? Number(geo_lon) : null;
   accuracy = accuracy ? parseInt(accuracy) : null;
 
   try {
-    // ip-api.com으로 추가 정보 조회
     const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,city,isp`;
     const r = await fetch(url);
     const geo = await r.json();
 
-    // DB 저장
     await pool.query(
       `INSERT INTO ip_logs (ip_address, country, city, isp, geo_lat, geo_lon, accuracy, timestamp)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-      [
-        ip,
-        geo.country || null,
-        geo.city || null,
-        geo.isp || null,
-        geo_lat,
-        geo_lon,
-        accuracy
-      ]
+       VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
+      [ip, geo.country || null, geo.city || null, geo.isp || null, geo_lat, geo_lon, accuracy]
     );
 
     res.send("IP + 위치 logged to DB!");
@@ -77,7 +63,7 @@ app.get("/", (req, res) => {
   }
 });
 
-// ✅ 관리자용 로그 조회 (JSON)
+// ✅ 관리자용 로그 조회
 app.get("/ips", async (req, res) => {
   if (req.query.key !== ADMIN_KEY) {
     return res.status(403).send("인증 실패");
@@ -97,9 +83,8 @@ app.get("/ips.csv", async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM ip_logs ORDER BY timestamp DESC");
       const csv = result.rows
-        .map(
-          r =>
-            `${r.timestamp},${r.ip_address},${r.country || ""},${r.city || ""},${r.isp || ""},${r.geo_lat || ""},${r.geo_lon || ""},${r.accuracy || ""}`
+        .map(r =>
+          `${r.timestamp},${r.ip_address},${r.country || ""},${r.city || ""},${r.isp || ""},${r.geo_lat || ""},${r.geo_lon || ""},${r.accuracy || ""}`
         )
         .join("\n");
       res.setHeader("Content-Type", "text/csv");
@@ -114,7 +99,6 @@ app.get("/ips.csv", async (req, res) => {
 });
 
 // ✅ 위치 조회 (관리자 전용)
-// 특정 IP 조회
 app.get("/geo", async (req, res) => {
   if (req.query.key !== ADMIN_KEY) {
     return res.status(403).json({ error: "관리자 인증 필요" });
@@ -155,8 +139,7 @@ app.get("/geo/me", async (req, res) => {
     return res.status(403).json({ error: "관리자 인증 필요" });
   }
 
-  const forwarded = req.headers["x-forwarded-for"];
-  const ip = (forwarded?.split(",")[0]?.trim()) || req.socket.remoteAddress;
+  const ip = req.ip;
 
   try {
     const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,regionName,city,lat,lon,isp,org,timezone,query`;
@@ -182,6 +165,14 @@ app.get("/geo/me", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "서버 오류", detail: String(err) });
   }
+});
+
+// ✅ 테스트용 라우트: 현재 IP 확인
+app.get("/my-ip", (req, res) => {
+  res.json({
+    ip: req.ip,
+    forwardedFor: req.headers["x-forwarded-for"] || "없음"
+  });
 });
 
 const PORT = process.env.PORT || 3000;
