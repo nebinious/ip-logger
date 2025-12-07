@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Real-time Location with Radius</title>
+    <style>
+      #map {
+        width: 100%;
+        height: 450px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>실시간 위치 + 반경 표시 지도</h2>
+    <div id="map"></div>
+
+    <script>
+      let map;
+      let marker;
+      let circle;
+
+      function initMap() {
+        // 초기 지도 위치 (서울)
+        const defaultPos = { lat: 37.5665, lng: 126.9780 };
+
+        map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 15,
+          center: defaultPos,
+        });
+
+        marker = new google.maps.Marker({
+          position: defaultPos,
+          map: map,
+        });
+
+        // ✅ 반경 원 생성 (기본 300m)
+        circle = new google.maps.Circle({
+          map: map,
+          radius: 300, // 반경 (미터 단위)
+          fillColor: "#4285F4",
+          fillOpacity: 0.2,
+          strokeColor: "#4285F4",
+          strokeOpacity: 0.6,
+          strokeWeight: 2,
+        });
+
+        circle.bindTo("center", marker, "position");
+
+        // ✅ 실시간 위치 추적
+        if (navigator.geolocation) {
+          navigator.geolocation.watchPosition(
+            function (pos) {
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+
+              const newPos = { lat, lng };
+
+              // 지도 중심 이동
+              map.setCenter(newPos);
+
+              // 마커 이동
+              marker.setPosition(newPos);
+
+              // 반경 원도 자동으로 마커 중심에 맞춰 이동됨
+            },
+            function (err) {
+              console.log("위치 권한 오류:", err);
+            },
+            {
+              enableHighAccuracy: true,
+              maximumAge: 0,
+              timeout: 5000,
+            }
+          );
+        } else {
+          alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
+        }
+      }
+    </script>
+
+    <!-- ✅ Google Maps API (API_KEY 넣기) -->
+    <script async
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC3YbR8Ov-n_Ah3ftfFkW0PYhG9sRN70Tg&callback=initMap">
+    </script>
+  </body>
+</html>

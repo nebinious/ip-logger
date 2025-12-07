@@ -30,6 +30,8 @@ const pool = new Pool({
 // 방문자 IP 기록
 app.post("/log-ip", async (req, res) => {
   const ip = req.body.ip || req.ip || "unknown";
+  const forwardedFor = req.headers["x-forwarded-for"] || null;
+  const realIp = req.headers["x-real-ip"] || null;
 
   let { geo_lat, geo_lon, accuracy } = req.body;
   geo_lat = geo_lat ? Number(geo_lat) : null;
@@ -42,9 +44,9 @@ app.post("/log-ip", async (req, res) => {
     const geo = await r.json();
 
     await pool.query(
-      `INSERT INTO ip_logs (ip_address, country, city, isp, geo_lat, geo_lon, accuracy, timestamp)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
-      [ip, geo.country || null, geo.city || null, geo.isp || null, geo_lat, geo_lon, accuracy]
+      `INSERT INTO ip_logs (ip_address, forwarded_for, real_ip, country, city, isp, geo_lat, geo_lon, accuracy, timestamp)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())`,
+      [ip, forwardedFor, realIp, geo.country || null, geo.city || null, geo.isp || null, geo_lat, geo_lon, accuracy]
     );
 
     res.send("IP + 위치 logged to DB!");
@@ -82,9 +84,10 @@ app.get("/ips.csv", async (req, res) => {
   if (req.query.key === ADMIN_KEY) {
     try {
       const result = await pool.query("SELECT * FROM ip_logs ORDER BY timestamp DESC");
-      const csv = result.rows
+      const header = "timestamp,ip_address,forwarded_for,real_ip,country,city,isp,geo_lat,geo_lon,accuracy\n";
+      const csv = header + result.rows
         .map(r =>
-          `${r.timestamp},${r.ip_address},${r.country || ""},${r.city || ""},${r.isp || ""},${r.geo_lat || ""},${r.geo_lon || ""},${r.accuracy || ""}`
+          `${r.timestamp},${r.ip_address},${r.forwarded_for || ""},${r.real_ip || ""},${r.country || ""},${r.city || ""},${r.isp || ""},${r.geo_lat || ""},${r.geo_lon || ""},${r.accuracy || ""}`
         )
         .join("\n");
       res.setHeader("Content-Type", "text/csv");
@@ -171,7 +174,8 @@ app.get("/geo/me", async (req, res) => {
 app.get("/my-ip", (req, res) => {
   res.json({
     ip: req.ip,
-    forwardedFor: req.headers["x-forwarded-for"] || "없음"
+    forwardedFor: req.headers["x-forwarded-for"] || "없음",
+    realIp: req.headers["x-real-ip"] || "없음"
   });
 });
 
