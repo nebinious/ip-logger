@@ -93,7 +93,7 @@
     <div class="activity-card">
       <div class="time">Nov 28, 2025 – 4:26 PM</div>
       <div class="title">New account login</div>
-      <div class="location">South Korea, Gyeongsangbuk-do (approximate)</div>
+      <div class="location">Montreal, Canada (approximate)</div>
       <div class="badge">Verified</div>
     </div>
 
@@ -108,7 +108,7 @@
     let map, activityMarker, myMarker, circle;
 
     function initMap() {
-      const activityPos = { lat: 35.8714, lng: 128.6014 }; // Daegu example
+      const activityPos = { lat: 45.5019, lng: -73.5674 }; // Montreal example
 
       map = new google.maps.Map(document.getElementById("map"), {
         zoom: 13,
@@ -147,7 +147,7 @@
               myMarker = new google.maps.Marker({
                 position: myPos,
                 map: map,
-                title: "Your location",
+                title: "",
                 icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
               });
             } else {
